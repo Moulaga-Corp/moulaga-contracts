@@ -7,6 +7,9 @@
   "author": "Moulaga Corp",
   "license": "MIT",
   "private": true,
+  "scripts": {
+    "test": "hardhat test ./test/*.test.ts"
+  },
   "dependencies": {
     "hardhat": "^2.12.2"
   },
