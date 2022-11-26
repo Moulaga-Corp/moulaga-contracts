@@ -13,6 +13,8 @@ describe ("MoulagaProtocol", () => {
     return { contract, contractOwner, feeder, holder1 };
   }
   const holder1Name = "holder1";
+  const holderKey = "holderKey";
+  const feederKey = "feederKey";
 
   describe("register as feeder", () => {
     it("should index the new feeder", async () => {
@@ -56,14 +58,14 @@ describe ("MoulagaProtocol", () => {
       const holder1Connection = contract.connect(holder1);
 
       expect(await getHolderOrNull(contract, holder1.address)).to.be.null;
-      await expect(holder1Connection.registerAsHolder(holder1Name, "some key")).to.be.fulfilled;
+      await expect(holder1Connection.registerAsHolder(holder1Name)).to.be.fulfilled;
       expect(await getHolderOrNull(contract, holder1.address)).to.deep.equal([holder1.address, holder1Name]);
     });
 
     it("should instantiate a new holder", async () => {
       const { contract, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1);
-      await holder1Connection.registerAsHolder(holder1Name, "some key");
+      await holder1Connection.registerAsHolder(holder1Name);
       const holderObject = await contract.addressToHolder(holder1.address);
       
       expect(holderObject).to.have.property("wallet", holder1.address);
@@ -73,7 +75,7 @@ describe ("MoulagaProtocol", () => {
     it("should a emit a 'NewHolder' event", async () => {
       const { contract, holder1 } = await loadFixture(deployContractFixture);
 
-      await expect(contract.connect(holder1).registerAsHolder(holder1Name, "some key"))
+      await expect(contract.connect(holder1).registerAsHolder(holder1Name))
         .to
         .emit(contract, "NewHolder")
         .withArgs(holder1.address);
@@ -82,9 +84,9 @@ describe ("MoulagaProtocol", () => {
     it("should fail when already registered as holder", async () => {
       const { contract, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1);
-      await holder1Connection.registerAsHolder(holder1Name, "some key");
+      await holder1Connection.registerAsHolder(holder1Name);
 
-      await expect(holder1Connection.registerAsHolder(holder1Name, "some key")).to.be.revertedWith("Already registered as holder.");
+      await expect(holder1Connection.registerAsHolder(holder1Name)).to.be.revertedWith("Already registered as holder.");
     });
   });
 
@@ -92,10 +94,10 @@ describe ("MoulagaProtocol", () => {
     it("should assign the holder to the feeder", async () => {
       const { contract, feeder, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1)
-      await holder1Connection.registerAsHolder(holder1Name, "some key");
+      await holder1Connection.registerAsHolder(holder1Name);
       await contract.connect(feeder).registerAsFeeder();
 
-      await expect(holder1Connection.onboardFeeder(feeder.address)).to.be.fulfilled;
+      await expect(holder1Connection.onboardFeeder(feeder.address, feederKey, holderKey)).to.be.fulfilled;
 
       const holders = await contract.getHoldersFromFeeder(feeder.address);
       expect(holders).to.have.length(1);
@@ -108,10 +110,10 @@ describe ("MoulagaProtocol", () => {
     it("should emit a 'FeederOnboarded' event", async () => {
       const { contract, feeder, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1)
-      await holder1Connection.registerAsHolder(holder1Name, "some key");
+      await holder1Connection.registerAsHolder(holder1Name);
       await contract.connect(feeder).registerAsFeeder();
 
-      await expect(holder1Connection.onboardFeeder(feeder.address))
+      await expect(holder1Connection.onboardFeeder(feeder.address, feederKey, holderKey))
         .to
         .emit(contract, "FeederOnboarded")
         .withArgs(feeder.address, holder1.address);
@@ -120,19 +122,19 @@ describe ("MoulagaProtocol", () => {
     it("should fail when the feeder is already onboarded", async () => {
       const { contract, feeder, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1)
-      await holder1Connection.registerAsHolder(holder1Name, "some key");
+      await holder1Connection.registerAsHolder(holder1Name);
       await contract.connect(feeder).registerAsFeeder();
-      await holder1Connection.onboardFeeder(feeder.address);
+      await holder1Connection.onboardFeeder(feeder.address, feederKey, holderKey);
 
-      await expect(holder1Connection.onboardFeeder(feeder.address)).to.be.revertedWith("Feeder already onboarded.");
+      await expect(holder1Connection.onboardFeeder(feeder.address, feederKey, holderKey)).to.be.revertedWith("Feeder already onboarded.");
     });
 
     it("should fail when the target is not a feeder", async () => {
       const { contract, feeder, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1);
-      await holder1Connection.registerAsHolder(holder1Name, "some key");
+      await holder1Connection.registerAsHolder(holder1Name);
 
-      await expect(holder1Connection.onboardFeeder(feeder.address)).to.be.revertedWith("Must be a feeder.");
+      await expect(holder1Connection.onboardFeeder(feeder.address, feederKey, holderKey)).to.be.revertedWith("Must be a feeder.");
     });
 
     it("should fail when the caller is not a holder", async () => {
@@ -140,7 +142,7 @@ describe ("MoulagaProtocol", () => {
       const holder1Connection = contract.connect(holder1);
       await contract.connect(feeder).registerAsFeeder();
 
-      await expect(holder1Connection.onboardFeeder(feeder.address)).to.be.revertedWith("Must be a holder.");
+      await expect(holder1Connection.onboardFeeder(feeder.address, feederKey, holderKey)).to.be.revertedWith("Must be a holder.");
     });
   });
 
@@ -151,7 +153,7 @@ describe ("MoulagaProtocol", () => {
     it("should index the new scheme", async () => {
       const { contract, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1);
-      await holder1Connection.registerAsHolder(holder1Name, "some key");
+      await holder1Connection.registerAsHolder(holder1Name);
 
       expect(await contract.getSchemesFromHolder(holder1.address)).to.have.length(0);
       await expect(holder1Connection.addScheme(scheme, signature)).to.be.fulfilled;
@@ -165,7 +167,7 @@ describe ("MoulagaProtocol", () => {
     it("should emit a 'New Scheme' event", async () => {
       const { contract, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1);
-      await holder1Connection.registerAsHolder(holder1Name, "some key");
+      await holder1Connection.registerAsHolder(holder1Name);
 
       await expect(holder1Connection.addScheme(scheme, signature))
         .to
@@ -183,7 +185,7 @@ describe ("MoulagaProtocol", () => {
     it("should fail when the scheme name is already indexed", async () => {
       const { contract, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1);
-      await holder1Connection.registerAsHolder(holder1Name, "some key");
+      await holder1Connection.registerAsHolder(holder1Name);
       await holder1Connection.addScheme(scheme, signature);
 
       await expect(holder1Connection.addScheme(scheme, "new signature")).to.be.revertedWith("Scheme already registered.");
