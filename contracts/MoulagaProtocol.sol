@@ -7,6 +7,7 @@ pragma solidity ^0.8.9;
 contract MoulagaProtocol {
   struct Holder {
     address wallet;
+    string key;
     string name;
   }
 
@@ -51,16 +52,18 @@ contract MoulagaProtocol {
     emit NewFeeder(msg.sender);
   }
 
-  function registerAsHolder(string memory name_) external {
+  function registerAsHolder(string memory name_, string memory key_) external {
     Holder memory holder = addressToHolder[msg.sender];
     require(
       holder.wallet == address(0) 
+        || bytes(holder.key).length == 0
         || bytes(holder.name).length == 0,
       "Already registered as holder."
     );
 
     addressToHolder[msg.sender] = Holder({
       wallet: msg.sender,
+      key: key_,
       name: name_
     });
     emit NewHolder(msg.sender);
