@@ -4,7 +4,12 @@ pragma solidity ^0.8.9;
 // Uncomment this line to use console.log
 // import "hardhat/console.sol";
 
-contract MoulagaProtocol {
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+
+contract MoulagaProtocol is ERC721 {
+  constructor() ERC721("MoulagaSBT", "MSBT") {
+  }
   struct Holder {
     address wallet;
     string name;
@@ -101,4 +106,68 @@ contract MoulagaProtocol {
   function getSchemesFromHolder(address holder_) external view mustBeHolder(holder_) returns (Scheme[] memory) {
     return _holderToSchemes[holder_];
   }
+
+  // SBT Structure containing all the concerned parties and the type of data
+  struct MoulagaSBT {
+    uint tokenId;
+    address feeder;
+    address holder;
+    address consumer;
+    //mapping(uint => string[]) scope; // scheme name
+    string[] schemeNames;
+  }
+
+  // A feeder can have 1 token per consumer for 1 designed holder
+  mapping(address => mapping(address => mapping(address => MoulagaSBT))) private _feederToHolderToConsumerSBT;
+  mapping(uint => MoulagaSBT) private moulagaSBTs;
+  event Mint(uint tokenId);
+  event Burn(uint tokenId);
+
+   using Counters for Counters.Counter;
+
+    Counters.Counter private _tokenIdCounter;
+
+  function getMoulagaSBT(uint tokenId) external view returns (MoulagaSBT memory) {
+        return moulagaSBTs[tokenId];
+  }
+
+  function safeMint(address consumer_, address holder_, string[] memory schemeNames) public mustBeFeeder(msg.sender) {
+    require(_feederToHolderToConsumerSBT[msg.sender][holder_][consumer_].tokenId != 0,
+              "MoulagaSBT already exists for the designed feeder, consumer and holder.");
+
+    uint256 tokenId = _tokenIdCounter.current();
+    _tokenIdCounter.increment();
+
+    MoulagaSBT memory moulagaSBT = MoulagaSBT({
+      tokenId: tokenId,
+      feeder: msg.sender,
+      holder: holder_,
+      consumer: consumer_,
+      schemeNames: schemeNames
+    });
+
+    _feederToHolderToConsumerSBT[msg.sender][holder_][consumer_] = moulagaSBT; 
+    moulagaSBTs[tokenId];
+
+    _safeMint(consumer_, tokenId);
+    emit Mint(tokenId);
+      
+  }
+
+  function burn(uint256 tokenId) public mustBeFeeder(msg.sender) {
+      MoulagaSBT memory moulagaSBT = moulagaSBTs[tokenId];
+
+      require(moulagaSBT.feeder == msg.sender, "Only the feeder of this token can burn it.");
+
+      delete _feederToHolderToConsumerSBT[moulagaSBT.feeder][moulagaSBT.holder][moulagaSBT.consumer];
+      delete moulagaSBTs[tokenId];
+
+      _burn(tokenId);
+      emit Burn(tokenId);
+  }
+
+  function _beforeTokenTransfer(address from, address to, uint256 tokenId) pure external {
+        require(from != address(0) || to != address(0) || tokenId != 0, 
+        "This a Soulbound token. It cannot be transferred. It can only be burned by the token feeder.");
+    }
 }

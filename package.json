@@ -11,7 +11,9 @@
     "test": "hardhat test ./test/*.test.ts"
   },
   "dependencies": {
-    "hardhat": "^2.12.2"
+    "@openzeppelin/contracts": "^4.8.0",
+    "hardhat": "^2.12.2",
+    "yarn": "^1.22.19"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.4.7",
