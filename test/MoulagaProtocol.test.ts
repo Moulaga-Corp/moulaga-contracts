@@ -197,54 +197,64 @@ describe ("MoulagaProtocol", () => {
     it("should mint a token with the given information", async () => {
       const { contract, consumer, feeder, holder1 } = await loadFixture(deployContractFixture);
       const feederConnection = contract.connect(feeder);
-      feederConnection.registerAsFeeder();
+      await feederConnection.registerAsFeeder();
+      
       await expect(feederConnection.safeMint(consumer.address, holder1.address, schemeNames)).to.be.fulfilled;
     });
 
     it("should fail when minting a token for the same feeder, consumer and holder", async () => {
       const { contract, consumer, feeder, holder1 } = await loadFixture(deployContractFixture);
       const feederConnection = contract.connect(feeder);
-      feederConnection.registerAsFeeder();
+      await feederConnection.registerAsFeeder();
+      await feederConnection.safeMint(consumer.address, holder1.address, schemeNames);
+      
       await expect(feederConnection.safeMint(consumer.address, holder1.address, schemeNames))
-      .to.be.revertedWith("MoulagaSBT already exists for the designed feeder, consumer and holder.");
+        .to.be.revertedWith("MoulagaSBT already exists for the designed feeder, consumer and holder.");
     });
 
     it("should burn the token of the given tokenId by the feeder", async () => {
       const { contract, consumer, feeder, holder1 } = await loadFixture(deployContractFixture);
       const feederConnection = contract.connect(feeder);
-      feederConnection.registerAsFeeder();
-      const moulagaSBT = feederConnection.getMoulagaSBT(feeder.address, holder1.address, consumer.address);
-      await expect(feederConnection.burn((await moulagaSBT).tokenId)).to.be.fulfilled;
+      await feederConnection.registerAsFeeder();
+      await feederConnection.safeMint(consumer.address, holder1.address, schemeNames);
+      const moulagaSBT = await feederConnection.getMoulagaSBT(feeder.address, holder1.address, consumer.address);
+      
+      await expect(feederConnection.burn(moulagaSBT.tokenId)).to.be.fulfilled;
     });
 
     it("should fail when trying to burn a token not belonging to the feeder", async () => {
       const { contract, consumer, feeder, feeder2, holder1 } = await loadFixture(deployContractFixture);
       const feederConnection = contract.connect(feeder);
-      feederConnection.registerAsFeeder();
+      await feederConnection.registerAsFeeder();
+      await feederConnection.safeMint(consumer.address, holder1.address, schemeNames);
+
       const feeder2Connection = contract.connect(feeder2);
-      feeder2Connection.registerAsFeeder();
+      await feeder2Connection.registerAsFeeder();
+      const moulagaSBT = await feederConnection.getMoulagaSBT(feeder.address, holder1.address, consumer.address);
       
-      const moulagaSBT = feederConnection.getMoulagaSBT(feeder.address, holder1.address, consumer.address);
-      await expect(feeder2Connection.burn((await moulagaSBT).tokenId))
-      .to.be.revertedWith("Only the feeder of this token can burn it.");
+      await expect(feeder2Connection.burn(moulagaSBT.tokenId))
+        .to.be.revertedWith("Only the feeder of this token can burn it.");
     });
 
     it("should fail when trying to transfer a soul bound token", async () => {
       const { contract, consumer, feeder, holder1 } = await loadFixture(deployContractFixture);
       const feederConnection = contract.connect(feeder);
-      feederConnection.registerAsFeeder();
-      const moulagaSBT = feederConnection.getMoulagaSBT(feeder.address, holder1.address, consumer.address);
-      console.log((await moulagaSBT).tokenId);
-      await expect(feederConnection.transferFrom(consumer.address, feeder.address, (await moulagaSBT).tokenId))
-      .to.be.revertedWith("This a Soulbound token. It cannot be transferred. It can only be burned by the token feeder.");
+      await feederConnection.registerAsFeeder();
+      await feederConnection.safeMint(consumer.address, holder1.address, schemeNames);
+      const moulagaSBT = await feederConnection.getMoulagaSBT(feeder.address, holder1.address, consumer.address);
+      
+      await expect(contract.connect(consumer).transferFrom(consumer.address, feeder.address, moulagaSBT.tokenId))
+        .to.be.revertedWith("This a Soulbound token. It cannot be transferred. It can only be burned by the token feeder.");
     });
 
     it("should return the moulaga token", async () => {
       const { contract, consumer, feeder, holder1 } = await loadFixture(deployContractFixture);
       const feederConnection = contract.connect(feeder);
-      feederConnection.registerAsFeeder();
-      const moulagaSBT = feederConnection.getMoulagaSBT(feeder.address, holder1.address, consumer.address);
-      expect(await moulagaSBT).to.have.property('feeder', feeder.address);
+      await feederConnection.registerAsFeeder();
+      await feederConnection.safeMint(consumer.address, holder1.address, schemeNames);
+
+      const moulagaSBT = await feederConnection.getMoulagaSBT(feeder.address, holder1.address, consumer.address);
+      expect(moulagaSBT.feeder).to.equal(feeder.address);
     });
 
     it("should emit a 'Mint' event", async () => {

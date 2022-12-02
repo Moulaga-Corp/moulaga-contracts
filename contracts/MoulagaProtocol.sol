@@ -11,6 +11,8 @@ contract MoulagaProtocol is ERC721 {
   using Counters for Counters.Counter;
 
   constructor() ERC721("MoulagaSBT", "MSBT") {
+    // start at 1
+    _tokenIdCounter.increment();
   }
 
   struct Holder {
@@ -128,8 +130,10 @@ contract MoulagaProtocol is ERC721 {
   }
 
   function safeMint(address consumer_, address holder_, string[] memory schemeNames) public mustBeFeeder(msg.sender) {
-    require(_feederToHolderToConsumerSBT[msg.sender][holder_][consumer_].tokenId != 0,
-              "MoulagaSBT already exists for the designed feeder, consumer and holder.");
+    require(
+      _feederToHolderToConsumerSBT[msg.sender][holder_][consumer_].tokenId == 0,
+      "MoulagaSBT already exists for the designed feeder, consumer and holder."
+    );
 
     uint256 tokenId = _tokenIdCounter.current();
     _tokenIdCounter.increment();
@@ -143,7 +147,7 @@ contract MoulagaProtocol is ERC721 {
     });
 
     _feederToHolderToConsumerSBT[msg.sender][holder_][consumer_] = moulagaSBT; 
-    moulagaSBTs[tokenId];
+    moulagaSBTs[tokenId] = moulagaSBT;
 
     _safeMint(consumer_, tokenId);
     emit Mint(tokenId);
@@ -151,23 +155,31 @@ contract MoulagaProtocol is ERC721 {
   }
 
   function burn(uint256 tokenId) public mustBeFeeder(msg.sender) {
-      MoulagaSBT memory moulagaSBT = moulagaSBTs[tokenId];
+    MoulagaSBT memory moulagaSBT = moulagaSBTs[tokenId];
 
-      require(moulagaSBT.feeder == msg.sender, "Only the feeder of this token can burn it.");
+    require(moulagaSBT.feeder == msg.sender, "Only the feeder of this token can burn it.");
 
-      delete _feederToHolderToConsumerSBT[moulagaSBT.feeder][moulagaSBT.holder][moulagaSBT.consumer];
-      delete moulagaSBTs[tokenId];
+    delete _feederToHolderToConsumerSBT[moulagaSBT.feeder][moulagaSBT.holder][moulagaSBT.consumer];
+    delete moulagaSBTs[tokenId];
 
-      _burn(tokenId);
-      emit Burn(tokenId);
+    _burn(tokenId);
+    emit Burn(tokenId);
   }
 
    function getMoulagaSBT(address feeder_, address holder_,  address consumer_) external view returns (MoulagaSBT memory) {
-        return _feederToHolderToConsumerSBT[feeder_][holder_][consumer_];
+    return _feederToHolderToConsumerSBT[feeder_][holder_][consumer_];
   }
 
-  function _beforeTokenTransfer(address from, address to, uint256 tokenId) pure external {
-        require(from != address(0) || to != address(0) || tokenId != 0, 
-        "This a Soulbound token. It cannot be transferred. It can only be burned by the token feeder.");
-    }
+  function _beforeTokenTransfer(
+      address from,
+      address to,
+      uint256 firstTokenId,
+      uint256 batchSize
+  ) internal virtual override {
+    require(
+      from == address(0) || to == address(0),
+      "This a Soulbound token. It cannot be transferred. It can only be burned by the token feeder."
+    );
+    super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+  }
 }

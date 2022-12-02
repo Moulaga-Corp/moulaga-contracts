@@ -8,6 +8,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
+    "compile": "hardhat compile",
     "test": "hardhat test ./test/*.test.ts"
   },
   "dependencies": {
