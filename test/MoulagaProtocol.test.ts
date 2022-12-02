@@ -191,4 +191,13 @@ describe ("MoulagaProtocol", () => {
       await expect(holder1Connection.addScheme(scheme, "new signature")).to.be.revertedWith("Scheme already registered.");
     });
   });
+
+  describe("mint a token as a feeder to a consumer given a holder", () => {
+    it("should mint a token with the given information", () => {});
+    it("should fail when minting a token for the same feeder, consumer and holder", () => {});
+    it("should burn the token of the given tokenId by the feeder", () => {});
+    it("should fail when trying to burn a token not belonging to the feeder", () => {});
+    it("should fail when trying to transfer a soul bound token", async () => {});
+    it("should return the moulaga token", () => {});
+  });
 });
