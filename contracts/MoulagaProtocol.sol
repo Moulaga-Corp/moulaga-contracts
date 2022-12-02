@@ -145,7 +145,7 @@ contract MoulagaProtocol is ERC721 {
     _feederToHolderToConsumerSBT[msg.sender][holder_][consumer_] = moulagaSBT; 
     moulagaSBTs[tokenId];
 
-    _safeMint(msg.sender, tokenId);
+    _safeMint(consumer_, tokenId);
     emit Mint(tokenId);
       
   }
