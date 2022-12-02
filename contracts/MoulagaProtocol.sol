@@ -8,8 +8,11 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract MoulagaProtocol is ERC721 {
+  using Counters for Counters.Counter;
+
   constructor() ERC721("MoulagaSBT", "MSBT") {
   }
+
   struct Holder {
     address wallet;
     string name;
@@ -21,10 +24,22 @@ contract MoulagaProtocol is ERC721 {
     string signature;
   }
 
+  // SBT Structure containing all the concerned parties and the type of data
+  struct MoulagaSBT {
+    uint tokenId;
+    address feeder;
+    address holder;
+    address consumer;
+    //mapping(uint => string[]) scope; // scheme name
+    string[] schemeNames;
+  }
+
   event NewFeeder(address feeder);
   event NewHolder(address holder);
   event FeederOnboarded(address feeder, address holder);
   event NewScheme(address holder, string name);
+  event Mint(uint tokenId);
+  event Burn(uint tokenId);
 
   modifier mustBeFeeder(address feeder_) {
     require(isFeeder[feeder_], "Must be a feeder.");
@@ -51,6 +66,11 @@ contract MoulagaProtocol is ERC721 {
   // onboarding
   mapping(address => mapping(address => string)) private _feederToHolderKey;
   mapping(address => mapping(address => string)) private _holderToFeederKey;
+
+  Counters.Counter private _tokenIdCounter;
+  // A feeder can have 1 token per consumer for 1 designed holder
+  mapping(address => mapping(address => mapping(address => MoulagaSBT))) private _feederToHolderToConsumerSBT;
+  mapping(uint => MoulagaSBT) private moulagaSBTs;
 
   function registerAsFeeder() external {
     require(!isFeeder[msg.sender], "Already registered as feeder.");
@@ -107,30 +127,6 @@ contract MoulagaProtocol is ERC721 {
     return _holderToSchemes[holder_];
   }
 
-  // SBT Structure containing all the concerned parties and the type of data
-  struct MoulagaSBT {
-    uint tokenId;
-    address feeder;
-    address holder;
-    address consumer;
-    //mapping(uint => string[]) scope; // scheme name
-    string[] schemeNames;
-  }
-
-  // A feeder can have 1 token per consumer for 1 designed holder
-  mapping(address => mapping(address => mapping(address => MoulagaSBT))) private _feederToHolderToConsumerSBT;
-  mapping(uint => MoulagaSBT) private moulagaSBTs;
-  event Mint(uint tokenId);
-  event Burn(uint tokenId);
-
-   using Counters for Counters.Counter;
-
-    Counters.Counter private _tokenIdCounter;
-
-  function getMoulagaSBT(uint tokenId) external view returns (MoulagaSBT memory) {
-        return moulagaSBTs[tokenId];
-  }
-
   function safeMint(address consumer_, address holder_, string[] memory schemeNames) public mustBeFeeder(msg.sender) {
     require(_feederToHolderToConsumerSBT[msg.sender][holder_][consumer_].tokenId != 0,
               "MoulagaSBT already exists for the designed feeder, consumer and holder.");
@@ -164,6 +160,10 @@ contract MoulagaProtocol is ERC721 {
 
       _burn(tokenId);
       emit Burn(tokenId);
+  }
+
+   function getMoulagaSBT(uint tokenId) external view returns (MoulagaSBT memory) {
+        return moulagaSBTs[tokenId];
   }
 
   function _beforeTokenTransfer(address from, address to, uint256 tokenId) pure external {
