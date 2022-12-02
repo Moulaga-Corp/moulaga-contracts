@@ -145,7 +145,7 @@ contract MoulagaProtocol is ERC721 {
     _feederToHolderToConsumerSBT[msg.sender][holder_][consumer_] = moulagaSBT; 
     moulagaSBTs[tokenId];
 
-    _safeMint(consumer_, tokenId);
+    _safeMint(msg.sender, tokenId);
     emit Mint(tokenId);
       
   }
@@ -162,8 +162,8 @@ contract MoulagaProtocol is ERC721 {
       emit Burn(tokenId);
   }
 
-   function getMoulagaSBT(uint tokenId) external view returns (MoulagaSBT memory) {
-        return moulagaSBTs[tokenId];
+   function getMoulagaSBT(address feeder_, address holder_,  address consumer_) external view returns (MoulagaSBT memory) {
+        return _feederToHolderToConsumerSBT[feeder_][holder_][consumer_];
   }
 
   function _beforeTokenTransfer(address from, address to, uint256 tokenId) pure external {
