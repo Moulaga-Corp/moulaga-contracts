@@ -1,7 +1,6 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { MoulagaProtocol } from "../typechain-types";
 
 describe ("MoulagaProtocol", () => {
   async function deployContractFixture() {
@@ -45,31 +44,21 @@ describe ("MoulagaProtocol", () => {
   });
 
   describe("register as holder", () => {
-    async function getHolderOrNull(contract: MoulagaProtocol, address: string): Promise<[string, string] | null> {
-      const [wallet, name] = await contract.addressToHolder(address);
-      if (wallet == ethers.constants.AddressZero || name == "") {
-        return null;
-      }
-      return [wallet, name];
-    }
-
     it("should index the new holder", async () => {
       const { contract, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1);
 
-      expect(await getHolderOrNull(contract, holder1.address)).to.be.null;
+      expect(await contract.isHolder(holder1.address)).to.be.false;
       await expect(holder1Connection.registerAsHolder(holder1Name)).to.be.fulfilled;
-      expect(await getHolderOrNull(contract, holder1.address)).to.deep.equal([holder1.address, holder1Name]);
+      expect(await contract.isHolder(holder1.address)).to.be.true;
     });
 
     it("should instantiate a new holder", async () => {
       const { contract, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1);
       await holder1Connection.registerAsHolder(holder1Name);
-      const holderObject = await contract.addressToHolder(holder1.address);
-      
-      expect(holderObject).to.have.property("wallet", holder1.address);
-      expect(holderObject).to.have.property("name", holder1Name);
+
+      expect(await contract.isHolder(holder1.address)).to.be.true;
     });
 
     it("should a emit a 'NewHolder' event", async () => {
@@ -189,80 +178,6 @@ describe ("MoulagaProtocol", () => {
       await holder1Connection.addScheme(scheme, signature);
 
       await expect(holder1Connection.addScheme(scheme, "new signature")).to.be.revertedWith("Scheme already registered.");
-    });
-  });
-
-  describe("mint a token as a feeder to a consumer given a holder", () => {
-    const schemeNames = ["name1", "name2", "name3"];
-    it("should mint a token with the given information", async () => {
-      const { contract, consumer, feeder, holder1 } = await loadFixture(deployContractFixture);
-      const feederConnection = contract.connect(feeder);
-      await feederConnection.registerAsFeeder();
-      
-      await expect(feederConnection.safeMint(consumer.address, holder1.address, schemeNames)).to.be.fulfilled;
-    });
-
-    it("should fail when minting a token for the same feeder, consumer and holder", async () => {
-      const { contract, consumer, feeder, holder1 } = await loadFixture(deployContractFixture);
-      const feederConnection = contract.connect(feeder);
-      await feederConnection.registerAsFeeder();
-      await feederConnection.safeMint(consumer.address, holder1.address, schemeNames);
-      
-      await expect(feederConnection.safeMint(consumer.address, holder1.address, schemeNames))
-        .to.be.revertedWith("MoulagaSBT already exists for the designed feeder, consumer and holder.");
-    });
-
-    it("should burn the token of the given tokenId by the feeder", async () => {
-      const { contract, consumer, feeder, holder1 } = await loadFixture(deployContractFixture);
-      const feederConnection = contract.connect(feeder);
-      await feederConnection.registerAsFeeder();
-      await feederConnection.safeMint(consumer.address, holder1.address, schemeNames);
-      const moulagaSBT = await feederConnection.getMoulagaSBT(feeder.address, holder1.address, consumer.address);
-      
-      await expect(feederConnection.burn(moulagaSBT.tokenId)).to.be.fulfilled;
-    });
-
-    it("should fail when trying to burn a token not belonging to the feeder", async () => {
-      const { contract, consumer, feeder, feeder2, holder1 } = await loadFixture(deployContractFixture);
-      const feederConnection = contract.connect(feeder);
-      await feederConnection.registerAsFeeder();
-      await feederConnection.safeMint(consumer.address, holder1.address, schemeNames);
-
-      const feeder2Connection = contract.connect(feeder2);
-      await feeder2Connection.registerAsFeeder();
-      const moulagaSBT = await feederConnection.getMoulagaSBT(feeder.address, holder1.address, consumer.address);
-      
-      await expect(feeder2Connection.burn(moulagaSBT.tokenId))
-        .to.be.revertedWith("Only the feeder of this token can burn it.");
-    });
-
-    it("should fail when trying to transfer a soul bound token", async () => {
-      const { contract, consumer, feeder, holder1 } = await loadFixture(deployContractFixture);
-      const feederConnection = contract.connect(feeder);
-      await feederConnection.registerAsFeeder();
-      await feederConnection.safeMint(consumer.address, holder1.address, schemeNames);
-      const moulagaSBT = await feederConnection.getMoulagaSBT(feeder.address, holder1.address, consumer.address);
-      
-      await expect(contract.connect(consumer).transferFrom(consumer.address, feeder.address, moulagaSBT.tokenId))
-        .to.be.revertedWith("This a Soulbound token. It cannot be transferred. It can only be burned by the token feeder.");
-    });
-
-    it("should return the moulaga token", async () => {
-      const { contract, consumer, feeder, holder1 } = await loadFixture(deployContractFixture);
-      const feederConnection = contract.connect(feeder);
-      await feederConnection.registerAsFeeder();
-      await feederConnection.safeMint(consumer.address, holder1.address, schemeNames);
-
-      const moulagaSBT = await feederConnection.getMoulagaSBT(feeder.address, holder1.address, consumer.address);
-      expect(moulagaSBT.feeder).to.equal(feeder.address);
-    });
-
-    it("should emit a 'Mint' event", async () => {
-   
-    });
-
-    it("should emit a 'Burn' event", async () => {
-   
     });
   });
 });
