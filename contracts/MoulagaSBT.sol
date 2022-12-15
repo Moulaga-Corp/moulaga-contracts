@@ -8,6 +8,7 @@ import "./MoulagaUtils.sol";
 interface Protocol {
   function isFeeder(address _feeder) external view returns(bool);
   function isHolder(address _holder) external view returns(bool);
+  function holderHasScheme(address _holder) external view returns(bool);
 }
 
 contract MoulagaSBT is ERC721 {
@@ -27,7 +28,7 @@ contract MoulagaSBT is ERC721 {
   Protocol private protocol;
 	Counters.Counter private tokenIdCounter;
 	mapping(uint => string[]) private schemeNamesFor;
-	// A feeder can have 1 token per consumer for 1 designed holder
+	// A feeder can have 1 token per consumer for 1 designated holder
   mapping(address => mapping(address => mapping(address => SBT))) private feederToHolderToConsumerSBT;
   mapping(uint => SBT) private moulagaSBTs;
 
@@ -37,13 +38,14 @@ contract MoulagaSBT is ERC721 {
     tokenIdCounter.increment();
   }
 
-	function safeMint(address consumer_, address holder_, string[] memory schemes) public {
+	function safeMint(address _consumer, address _holder, string[] memory _schemes) public {
     require(protocol.isFeeder(msg.sender), "Must be feeder.");
     require(protocol.isHolder(holder_), "Must be holder.");
     require(
-      feederToHolderToConsumerSBT[msg.sender][holder_][consumer_].tokenId == 0,
-      "MoulagaSBT already exists for the designed feeder, consumer and holder."
+      feederToHolderToConsumerSBT[msg.sender][_holder][_consumer].tokenId == 0,
+      "MoulagaSBT already exists for the designated feeder, consumer and holder."
     );
+    require(verifySchemes(_holder, _schemes), "One or more schemes do not exist.");
 
     uint256 tokenId = tokenIdCounter.current();
     tokenIdCounter.increment();
@@ -51,15 +53,15 @@ contract MoulagaSBT is ERC721 {
     SBT memory moulagaSBT = SBT({
       tokenId: tokenId,
       feeder: msg.sender,
-      holder: holder_,
-      consumer: consumer_
+      holder: _holder,
+      consumer: _consumer
     });
-    schemeNamesFor[tokenId] = schemes;
+    schemeNamesFor[tokenId] = _schemes;
 
-    feederToHolderToConsumerSBT[msg.sender][holder_][consumer_] = moulagaSBT; 
+    feederToHolderToConsumerSBT[msg.sender][_holder][_consumer] = moulagaSBT; 
     moulagaSBTs[tokenId] = moulagaSBT;
 
-    _safeMint(consumer_, tokenId);
+    _safeMint(_consumer, tokenId);
     emit Mint(tokenId);
   }
 
@@ -105,5 +107,14 @@ contract MoulagaSBT is ERC721 {
       "This a Soulbound token. It cannot be transferred. It can only be burned by the token feeder."
     );
     super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+  }
+
+  function verifySchemes(address _holder, string[] memory _schemes) private view returns (bool) {
+    for (uint i = 0; i < _schemes.length; i++) {
+      if (!protocol.holderHasScheme(_holder)) {
+        return false;
+      }
+    }
+    return true;
   }
 }

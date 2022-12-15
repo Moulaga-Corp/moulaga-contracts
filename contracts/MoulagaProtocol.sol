@@ -9,13 +9,13 @@ contract MoulagaProtocol is MoulagaUtils {
   event FeederOnboarded(address feeder, address holder);
   event NewScheme(address holder, string name);
 
-  mapping(address => Scheme[]) private _holderToSchemes;
-  mapping(address => mapping(string => bool)) private _holderHasScheme;
-  mapping(address => Holder[]) private _feederToHolders;
+  mapping(address => Scheme[]) private holderToSchemes;
+  mapping(address => mapping(string => bool)) public holderHasScheme;
+  mapping(address => Holder[]) private feederToHolders;
 
   // onboarding
-  mapping(address => mapping(address => string)) private _feederToHolderKey;
-  mapping(address => mapping(address => string)) private _holderToFeederKey;
+  mapping(address => mapping(address => string)) private feederToHolderKey;
+  mapping(address => mapping(address => string)) private holderToFeederKey;
 
   function registerAsFeeder() external {
     require(!isFeeder[msg.sender], "Already registered as feeder.");
@@ -37,22 +37,22 @@ contract MoulagaProtocol is MoulagaUtils {
   }
 
   function onboardFeeder(address feeder_, string memory keyForFeeder_, string memory keyForHolder_) external mustBeFeeder(feeder_) mustBeHolder(msg.sender) {
-    require(bytes(_feederToHolderKey[feeder_][msg.sender]).length == 0, "Feeder already onboarded.");
-    require(bytes(_holderToFeederKey[msg.sender][feeder_]).length == 0, "Feeder already onboarded.");
+    require(bytes(feederToHolderKey[feeder_][msg.sender]).length == 0, "Feeder already onboarded.");
+    require(bytes(holderToFeederKey[msg.sender][feeder_]).length == 0, "Feeder already onboarded.");
     
-    _feederToHolderKey[feeder_][msg.sender] = keyForFeeder_;
-    _holderToFeederKey[msg.sender][feeder_] = keyForHolder_;
-    _feederToHolders[feeder_].push(addressToHolder[msg.sender]);
+    feederToHolderKey[feeder_][msg.sender] = keyForFeeder_;
+    holderToFeederKey[msg.sender][feeder_] = keyForHolder_;
+    feederToHolders[feeder_].push(addressToHolder[msg.sender]);
 
     emit FeederOnboarded(feeder_, msg.sender);
   }
 
   function addScheme(string memory name_, string memory signature_) external mustBeHolder(msg.sender) {
     require(bytes(name_).length > 0, "Must provide a name.");
-    require(!_holderHasScheme[msg.sender][name_], "Scheme already registered.");
+    require(!holderHasScheme[msg.sender][name_], "Scheme already registered.");
 
-    _holderHasScheme[msg.sender][name_] = true;
-    _holderToSchemes[msg.sender].push(Scheme({
+    holderHasScheme[msg.sender][name_] = true;
+    holderToSchemes[msg.sender].push(Scheme({
       name: name_,
       signature: signature_
     }));
@@ -61,10 +61,10 @@ contract MoulagaProtocol is MoulagaUtils {
   }
 
   function getHoldersFromFeeder(address feeder_) external view mustBeFeeder(feeder_) returns (Holder[] memory) {
-    return _feederToHolders[feeder_];
+    return feederToHolders[feeder_];
   }
 
   function getSchemesFromHolder(address holder_) external view mustBeHolder(holder_) returns (Scheme[] memory) {
-    return _holderToSchemes[holder_];
+    return holderToSchemes[holder_];
   }
 }
