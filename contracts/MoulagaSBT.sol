@@ -40,6 +40,7 @@ contract MoulagaSBT is ERC721 {
 
 	function safeMint(address _consumer, address _holder, string[] memory _schemes) public {
     require(protocol.isFeeder(msg.sender), "Must be feeder.");
+    require(protocol.isHolder(_holder), "Must be holder.");
     require(
       feederToHolderToConsumerSBT[msg.sender][_holder][_consumer].tokenId == 0,
       "MoulagaSBT already exists for the designated feeder, consumer and holder."
@@ -78,6 +79,21 @@ contract MoulagaSBT is ERC721 {
 
    function getMoulagaSBT(address feeder_, address holder_,  address consumer_) external view returns (SBT memory) {
     return feederToHolderToConsumerSBT[feeder_][holder_][consumer_];
+  }
+
+  function hasSchemeNames(address feeder_, address holder_, string calldata schemeName) external view returns(bool) {
+    require(
+      protocol.isFeeder(feeder_) && protocol.isHolder(holder_), 
+      "There is no SBT for the given feeder, holder and consumer."
+    );
+    SBT storage moulagaSBT = feederToHolderToConsumerSBT[feeder_][holder_][msg.sender];
+
+    for(uint256 i = 0; i < schemeNamesFor[moulagaSBT.tokenId].length; i++) {
+      if(keccak256(bytes(schemeNamesFor[moulagaSBT.tokenId][i])) == keccak256(bytes(schemeName))) {
+        return true;
+      }
+    }
+    return false;
   }
 
   function _beforeTokenTransfer(

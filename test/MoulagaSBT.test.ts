@@ -52,6 +52,18 @@ describe("mint a token as a feeder to a consumer given a holder", () => {
 		await expect(feederToSBT.burn(moulagaSBT.tokenId)).to.be.fulfilled;
 	});
 
+	describe("burn token", () => {
+		it("should burn the token of the given tokenId by the feeder", async () => {
+			const { protocolContract, sbtContract, consumer, feeder, holder } = await loadFixture(deployProtocolAndSBT);
+			const feederToProtocol = protocolContract.connect(feeder);
+			const feederToSBT = sbtContract.connect(feeder);
+			await feederToProtocol.registerAsFeeder();
+			await feederToSBT.safeMint(consumer.address, holder.address, schemeNames);
+			const moulagaSBT = await feederToSBT.getMoulagaSBT(feeder.address, holder.address, consumer.address);
+			
+			await expect(feederToSBT.burn(moulagaSBT.tokenId)).to.be.fulfilled;
+		});
+
 	it("should fail when trying to burn a token not belonging to the feeder", async () => {
 		const { protocolContract, sbtContract, consumer, feeder, feeder2, holder } = await loadFixture(deployProtocolAndSBT);
 		const feederToProtocol = protocolContract.connect(feeder);
@@ -97,5 +109,5 @@ describe("mint a token as a feeder to a consumer given a holder", () => {
 
 	// it("should emit a 'Burn' event", async () => {
  
-	// });
+	});
 });
