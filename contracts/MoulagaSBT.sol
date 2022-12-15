@@ -81,15 +81,22 @@ contract MoulagaSBT is ERC721 {
     return feederToHolderToConsumerSBT[feeder_][holder_][consumer_];
   }
 
-  function hasSchemeNames(address feeder_, address holder_, string calldata schemeName) external view returns(bool) {
+  /**
+   * @notice method for holder to check wether a consumer has access to a feeder's data
+   * @param _feeder address of the feeder
+   * @param _consumer address of the consumer
+   * @param _schemeName name of the scheme requested by a consumer
+   * @return check true if consumer is authorized, false otherwise
+   */
+  function isAuthorized(address _feeder, address _consumer, string calldata _schemeName) external view returns(bool) {
     require(
-      protocol.isFeeder(feeder_) && protocol.isHolder(holder_), 
+      protocol.isFeeder(_feeder) && protocol.isHolder(msg.sender), 
       "There is no SBT for the given feeder, holder and consumer."
     );
-    SBT storage moulagaSBT = feederToHolderToConsumerSBT[feeder_][holder_][msg.sender];
+    SBT storage moulagaSBT = feederToHolderToConsumerSBT[_feeder][msg.sender][_consumer];
 
     for(uint256 i = 0; i < schemeNamesFor[moulagaSBT.tokenId].length; i++) {
-      if(keccak256(bytes(schemeNamesFor[moulagaSBT.tokenId][i])) == keccak256(bytes(schemeName))) {
+      if(keccak256(bytes(schemeNamesFor[moulagaSBT.tokenId][i])) == keccak256(bytes(_schemeName))) {
         return true;
       }
     }
