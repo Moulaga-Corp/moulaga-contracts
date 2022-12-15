@@ -10,7 +10,7 @@ contract MoulagaProtocol is MoulagaUtils {
   event NewScheme(address holder, string name);
 
   mapping(address => Scheme[]) private holderToSchemes;
-  mapping(address => mapping(string => bool)) public holderHasScheme;
+  mapping(address => mapping(string => bool)) private holderHasScheme;
   mapping(address => Holder[]) private feederToHolders;
 
   // onboarding
@@ -66,5 +66,10 @@ contract MoulagaProtocol is MoulagaUtils {
 
   function getSchemesFromHolder(address holder_) external view mustBeHolder(holder_) returns (Scheme[] memory) {
     return holderToSchemes[holder_];
+  }
+
+  function hasScheme(address _holder, string memory _scheme) external view returns (bool) {
+    require(isHolder[_holder], "Not a holder.");
+    return holderHasScheme[_holder][_scheme];
   }
 }

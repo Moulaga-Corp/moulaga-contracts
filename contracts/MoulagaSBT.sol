@@ -8,7 +8,7 @@ import "./MoulagaUtils.sol";
 interface Protocol {
   function isFeeder(address _feeder) external view returns(bool);
   function isHolder(address _holder) external view returns(bool);
-  function holderHasScheme(address _holder) external view returns(bool);
+  function hasScheme(address _holder, string memory _scheme) external view returns(bool);
 }
 
 contract MoulagaSBT is ERC721 {
@@ -95,7 +95,7 @@ contract MoulagaSBT is ERC721 {
 
   function verifySchemes(address _holder, string[] memory _schemes) private view returns (bool) {
     for (uint i = 0; i < _schemes.length; i++) {
-      if (!protocol.holderHasScheme(_holder)) {
+      if (!protocol.hasScheme(_holder, _schemes[i])) {
         return false;
       }
     }
