@@ -74,7 +74,7 @@ contract MoulagaProtocol is MoulagaUtils {
     return key;
   }
 
-  function getHolderForFeeder(address _feeder) external view mustBeFeeder(_feeder) mustBeHolder(msg.sender) returns (string memory) {
+  function getHolderKeyForFeeder(address _feeder) external view mustBeFeeder(_feeder) mustBeHolder(msg.sender) returns (string memory) {
     string memory key = holderToFeederKey[msg.sender][_feeder];
     require(bytes(key).length > 0, "Feeder not onboarded.");
     return key;
