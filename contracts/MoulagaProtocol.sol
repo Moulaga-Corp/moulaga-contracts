@@ -68,6 +68,18 @@ contract MoulagaProtocol is MoulagaUtils {
     return holderToSchemes[holder_];
   }
 
+  function getFeederKeyForHolder(address _holder) external view mustBeFeeder(msg.sender) mustBeHolder(_holder) returns (string memory) {
+    string memory key = feederToHolderKey[msg.sender][_holder];
+    require(bytes(key).length > 0, "Not registered at holder.");
+    return key;
+  }
+
+  function getHolderForFeeder(address _feeder) external view mustBeFeeder(_feeder) mustBeHolder(msg.sender) returns (string memory) {
+    string memory key = holderToFeederKey[msg.sender][_feeder];
+    require(bytes(key).length > 0, "Feeder not onboarded.");
+    return key;
+  }
+
   function hasScheme(address _holder, string memory _scheme) external view returns (bool) {
     require(isHolder[_holder], "Not a holder.");
     return holderHasScheme[_holder][_scheme];
