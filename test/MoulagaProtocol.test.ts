@@ -135,22 +135,20 @@ describe ("MoulagaProtocol", () => {
     });
   });
 
-  describe("add scheme", () => {
-    const scheme = "scheme1";
-    const signature = "signature1";
+  describe("add scope", () => {
+    const scope = "scope1";
 
     it("should index the new scheme", async () => {
       const { contract, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1);
       await holder1Connection.registerAsHolder(holder1Name);
 
-      expect(await contract.getSchemesFromHolder(holder1.address)).to.have.length(0);
-      await expect(holder1Connection.addScheme(scheme, signature)).to.be.fulfilled;
+      expect(await contract.getScopesFromHolder(holder1.address)).to.have.length(0);
+      await expect(holder1Connection.addScope(scope)).to.be.fulfilled;
 
-      const schemes = await contract.getSchemesFromHolder(holder1.address)
-      expect(schemes).to.have.length(1);
-      expect(schemes[0]).to.have.property("name", scheme);
-      expect(schemes[0]).to.have.property("signature", signature);
+      const scopes = await contract.getScopesFromHolder(holder1.address)
+      expect(scopes).to.have.length(1);
+      expect(scopes[0]).to.be.equal(scope);
     });
 
     it("should emit a 'New Scheme' event", async () => {
@@ -158,26 +156,26 @@ describe ("MoulagaProtocol", () => {
       const holder1Connection = contract.connect(holder1);
       await holder1Connection.registerAsHolder(holder1Name);
 
-      await expect(holder1Connection.addScheme(scheme, signature))
+      await expect(holder1Connection.addScope(scope))
         .to
         .emit(contract, "NewScheme")
-        .withArgs(holder1.address, scheme);
+        .withArgs(holder1.address, scope);
     });
 
     it("should fail when the caller is not a holder", async () => {
       const { contract, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1);
 
-      await expect(holder1Connection.addScheme(scheme, signature)).to.be.revertedWith("Must be a holder.");
+      await expect(holder1Connection.addScope(scope)).to.be.revertedWith("Must be a holder.");
     });
 
     it("should fail when the scheme name is already indexed", async () => {
       const { contract, holder1 } = await loadFixture(deployContractFixture);
       const holder1Connection = contract.connect(holder1);
       await holder1Connection.registerAsHolder(holder1Name);
-      await holder1Connection.addScheme(scheme, signature);
+      await holder1Connection.addScope(scope);
 
-      await expect(holder1Connection.addScheme(scheme, "new signature")).to.be.revertedWith("Scheme already registered.");
+      await expect(holder1Connection.addScope(scope)).to.be.revertedWith("Scope already registered.");
     });
   });
 });

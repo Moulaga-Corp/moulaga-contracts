@@ -7,12 +7,6 @@ contract MoulagaUtils {
     string name;
   }
 
-  // recommended schemeName-<version number>
-  struct Scheme { 
-    string name;
-    string signature;
-  }
-
   mapping(address => Holder) internal addressToHolder;
   mapping(address => bool) public isHolder;
 	mapping(address => bool) public isFeeder;

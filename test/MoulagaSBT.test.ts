@@ -14,9 +14,9 @@ describe("mint a token as a feeder to a consumer given a holder", () => {
     const sbtContract = await MoulagaSBT.deploy(protocolContract.address);
 
 		await protocolContract.connect(holder).registerAsHolder("holder");
-		await protocolContract.connect(holder).addScheme(schemeNames[0], '{"value": "string"}');
-		await protocolContract.connect(holder).addScheme(schemeNames[1], '{"value": "string"}');
-		await protocolContract.connect(holder).addScheme(schemeNames[2], '{"value": "string"}');
+		await protocolContract.connect(holder).addScope(schemeNames[0]);
+		await protocolContract.connect(holder).addScope(schemeNames[1]);
+		await protocolContract.connect(holder).addScope(schemeNames[2]);
 
     return { protocolContract, sbtContract, consumer, feeder, feeder2, holder };
   }

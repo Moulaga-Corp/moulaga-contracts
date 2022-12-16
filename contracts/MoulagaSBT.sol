@@ -8,7 +8,7 @@ import "./MoulagaUtils.sol";
 interface Protocol {
   function isFeeder(address _feeder) external view returns(bool);
   function isHolder(address _holder) external view returns(bool);
-  function hasScheme(address _holder, string memory _scheme) external view returns(bool);
+  function hasScope(address _holder, string memory _scope) external view returns(bool);
 }
 
 contract MoulagaSBT is ERC721 {
@@ -27,7 +27,7 @@ contract MoulagaSBT is ERC721 {
 
   Protocol private protocol;
 	Counters.Counter private tokenIdCounter;
-	mapping(uint => string[]) private schemeNamesFor;
+	mapping(uint => string[]) private scopesFor;
 	// A feeder can have 1 token per consumer for 1 designated holder
   mapping(address => mapping(address => mapping(address => SBT))) private feederToHolderToConsumerSBT;
   mapping(uint => SBT) private moulagaSBTs;
@@ -56,7 +56,7 @@ contract MoulagaSBT is ERC721 {
       holder: _holder,
       consumer: _consumer
     });
-    schemeNamesFor[tokenId] = _schemes;
+    scopesFor[tokenId] = _schemes;
 
     feederToHolderToConsumerSBT[msg.sender][_holder][_consumer] = moulagaSBT; 
     moulagaSBTs[tokenId] = moulagaSBT;
@@ -95,8 +95,8 @@ contract MoulagaSBT is ERC721 {
     );
     SBT storage moulagaSBT = feederToHolderToConsumerSBT[_feeder][msg.sender][_consumer];
 
-    for(uint256 i = 0; i < schemeNamesFor[moulagaSBT.tokenId].length; i++) {
-      if(keccak256(bytes(schemeNamesFor[moulagaSBT.tokenId][i])) == keccak256(bytes(_schemeName))) {
+    for(uint256 i = 0; i < scopesFor[moulagaSBT.tokenId].length; i++) {
+      if(keccak256(bytes(scopesFor[moulagaSBT.tokenId][i])) == keccak256(bytes(_schemeName))) {
         return true;
       }
     }
@@ -116,9 +116,9 @@ contract MoulagaSBT is ERC721 {
     super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
   }
 
-  function verifySchemes(address _holder, string[] memory _schemes) private view returns (bool) {
-    for (uint i = 0; i < _schemes.length; i++) {
-      if (!protocol.hasScheme(_holder, _schemes[i])) {
+  function verifySchemes(address _holder, string[] memory _scopes) private view returns (bool) {
+    for (uint i = 0; i < _scopes.length; i++) {
+      if (!protocol.hasScope(_holder, _scopes[i])) {
         return false;
       }
     }

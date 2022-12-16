@@ -4,13 +4,19 @@ pragma solidity ^0.8.9;
 import "./MoulagaUtils.sol";
 
 contract MoulagaProtocol is MoulagaUtils {
+  // recommended schemeName-<version number>
+  // struct Scheme { 
+  //   string name;
+  //   string signature;
+  // }
+
   event NewFeeder(address feeder);
   event NewHolder(address holder);
   event FeederOnboarded(address feeder, address holder);
   event NewScheme(address holder, string name);
 
-  mapping(address => Scheme[]) private holderToSchemes;
-  mapping(address => mapping(string => bool)) private holderHasScheme;
+  mapping(address => string[]) private holderToScopes;
+  mapping(address => mapping(string => bool)) private holderHasScope;
   mapping(address => Holder[]) private feederToHolders;
 
   // onboarding
@@ -47,25 +53,22 @@ contract MoulagaProtocol is MoulagaUtils {
     emit FeederOnboarded(feeder_, msg.sender);
   }
 
-  function addScheme(string memory name_, string memory signature_) external mustBeHolder(msg.sender) {
-    require(bytes(name_).length > 0, "Must provide a name.");
-    require(!holderHasScheme[msg.sender][name_], "Scheme already registered.");
+  function addScope(string memory _name) external mustBeHolder(msg.sender) {
+    require(bytes(_name).length > 0, "Must provide a name.");
+    require(!holderHasScope[msg.sender][_name], "Scope already registered.");
 
-    holderHasScheme[msg.sender][name_] = true;
-    holderToSchemes[msg.sender].push(Scheme({
-      name: name_,
-      signature: signature_
-    }));
+    holderHasScope[msg.sender][_name] = true;
+    holderToScopes[msg.sender].push(_name);
 
-    emit NewScheme(msg.sender, name_);
+    emit NewScheme(msg.sender, _name);
   }
 
   function getHoldersFromFeeder(address feeder_) external view mustBeFeeder(feeder_) returns (Holder[] memory) {
     return feederToHolders[feeder_];
   }
 
-  function getSchemesFromHolder(address holder_) external view mustBeHolder(holder_) returns (Scheme[] memory) {
-    return holderToSchemes[holder_];
+  function getScopesFromHolder(address holder_) external view mustBeHolder(holder_) returns (string[] memory) {
+    return holderToScopes[holder_];
   }
 
   function getFeederKeyForHolder(address _holder) external view mustBeFeeder(msg.sender) mustBeHolder(_holder) returns (string memory) {
@@ -80,8 +83,8 @@ contract MoulagaProtocol is MoulagaUtils {
     return key;
   }
 
-  function hasScheme(address _holder, string memory _scheme) external view returns (bool) {
+  function hasScope(address _holder, string memory _scope) external view returns (bool) {
     require(isHolder[_holder], "Not a holder.");
-    return holderHasScheme[_holder][_scheme];
+    return holderHasScope[_holder][_scope];
   }
 }
