@@ -110,7 +110,17 @@ contract MoulagaSBT is ERC721 {
 
   function getMintedSBTs() external view returns (SBT[] memory) {
     require(protocol.isFeeder(msg.sender), "Not a feeder.");
-    return feederSBTs[msg.sender];
+    
+    SBT[] memory validTokens;
+    uint256 targetId = 0;
+    for (uint256 index = 0; index < feederSBTs[msg.sender].length; index++) {
+      SBT memory token = feederSBTs[msg.sender][index];
+      if (!token.isRevoked) {
+        validTokens[targetId] = token;
+        targetId++;
+      }
+    }
+    return validTokens;
   }
 
   function _beforeTokenTransfer(
@@ -127,16 +137,13 @@ contract MoulagaSBT is ERC721 {
   }
 
   function removeSBTForFeeder(uint256 _tokenId, address _feeder) private {
-    SBT[] memory newTab;
-
-    uint256 targetIndex = 0;
     for (uint256 index = 0; index < feederSBTs[_feeder].length; index++) {
-      if (feederSBTs[_feeder][index].tokenId != _tokenId) {
-        newTab[targetIndex] = feederSBTs[_feeder][index];
-        targetIndex++;
+      SBT storage token = feederSBTs[_feeder][index];
+      if (token.tokenId == _tokenId) {
+        token.isRevoked = true;
+        return;
       }
     }
-    feederSBTs[_feeder] = newTab;
   }
 
   function verifySchemes(address _holder, string[] memory _scopes) private view returns (bool) {
