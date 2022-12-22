@@ -178,4 +178,21 @@ describe ("MoulagaProtocol", () => {
       await expect(holder1Connection.addScope(scope)).to.be.revertedWith("Scope already registered.");
     });
   });
+
+  describe("list holders", () => {
+    it("should succeed when empty", async () => {
+      const { contract } = await loadFixture(deployContractFixture);
+
+      const holders = await contract.listHolders();
+      expect(holders).to.have.lengthOf(0);
+    });
+
+    it("should succeed when not empty", async () => {
+      const { contract, holder1 } = await loadFixture(deployContractFixture);
+      await contract.connect(holder1).registerAsHolder(holder1Name);
+
+      const holders = await contract.listHolders();
+      expect(holders).to.have.lengthOf(1);
+    });
+  });
 });
