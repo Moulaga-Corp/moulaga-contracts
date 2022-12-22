@@ -4,17 +4,13 @@ pragma solidity ^0.8.9;
 import "./MoulagaUtils.sol";
 
 contract MoulagaProtocol is MoulagaUtils {
-  // recommended schemeName-<version number>
-  // struct Scheme { 
-  //   string name;
-  //   string signature;
-  // }
 
   event NewFeeder(address feeder);
   event NewHolder(address holder);
   event FeederOnboarded(address feeder, address holder);
   event NewScheme(address holder, string name);
 
+  Holder[] private holders;
   mapping(address => string[]) private holderToScopes;
   mapping(address => mapping(string => bool)) private holderHasScope;
   mapping(address => Holder[]) private feederToHolders;
@@ -33,10 +29,12 @@ contract MoulagaProtocol is MoulagaUtils {
   function registerAsHolder(string memory name_) external {
     require(!isHolder[msg.sender], "Already registered as holder.");
 
-    addressToHolder[msg.sender] = Holder({
+    Holder memory holder = Holder({
       wallet: msg.sender,
       name: name_
     });
+    addressToHolder[msg.sender] = holder;
+    holders.push(holder);
     isHolder[msg.sender] = true;
 
     emit NewHolder(msg.sender);
@@ -61,6 +59,10 @@ contract MoulagaProtocol is MoulagaUtils {
     holderToScopes[msg.sender].push(_name);
 
     emit NewScheme(msg.sender, _name);
+  }
+
+  function listHolders() external view returns (Holder[] memory) {
+    return holders;
   }
 
   function getHoldersFromFeeder(address feeder_) external view mustBeFeeder(feeder_) returns (Holder[] memory) {

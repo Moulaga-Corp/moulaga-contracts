@@ -17,6 +17,7 @@ contract MoulagaSBT is ERC721 {
 	// SBT Structure containing all the concerned parties and the type of data
   struct SBT {
     uint tokenId;
+    bool isRevoked;
     address feeder;
     address holder;
     address consumer;
@@ -31,6 +32,7 @@ contract MoulagaSBT is ERC721 {
 	// A feeder can have 1 token per consumer for 1 designated holder
   mapping(address => mapping(address => mapping(address => SBT))) private feederToHolderToConsumerSBT;
   mapping(uint => SBT) private moulagaSBTs;
+  mapping(address => SBT[]) private feederSBTs;
 
   constructor(address _protocolAddress) ERC721("MoulagaSBT", "MSBT") {
     // start at 1
@@ -52,6 +54,7 @@ contract MoulagaSBT is ERC721 {
 
     SBT memory moulagaSBT = SBT({
       tokenId: tokenId,
+      isRevoked: false,
       feeder: msg.sender,
       holder: _holder,
       consumer: _consumer
@@ -60,6 +63,7 @@ contract MoulagaSBT is ERC721 {
 
     feederToHolderToConsumerSBT[msg.sender][_holder][_consumer] = moulagaSBT; 
     moulagaSBTs[tokenId] = moulagaSBT;
+    feederSBTs[msg.sender].push(moulagaSBT);
 
     _safeMint(_consumer, tokenId);
     emit Mint(tokenId);
@@ -74,6 +78,7 @@ contract MoulagaSBT is ERC721 {
     delete moulagaSBTs[tokenId];
 
     _burn(tokenId);
+    removeSBTForFeeder(tokenId, msg.sender);
     emit Burn(tokenId);
   }
 
@@ -103,6 +108,11 @@ contract MoulagaSBT is ERC721 {
     return false;
   }
 
+  function getMintedSBTs() external view returns (SBT[] memory) {
+    require(protocol.isFeeder(msg.sender), "Not a feeder.");
+    return feederSBTs[msg.sender];
+  }
+
   function _beforeTokenTransfer(
       address from,
       address to,
@@ -114,6 +124,19 @@ contract MoulagaSBT is ERC721 {
       "This a Soulbound token. It cannot be transferred. It can only be burned by the token feeder."
     );
     super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+  }
+
+  function removeSBTForFeeder(uint256 _tokenId, address _feeder) private {
+    SBT[] memory newTab;
+
+    uint256 targetIndex = 0;
+    for (uint256 index = 0; index < feederSBTs[_feeder].length; index++) {
+      if (feederSBTs[_feeder][index].tokenId != _tokenId) {
+        newTab[targetIndex] = feederSBTs[_feeder][index];
+        targetIndex++;
+      }
+    }
+    feederSBTs[_feeder] = newTab;
   }
 
   function verifySchemes(address _holder, string[] memory _scopes) private view returns (bool) {
