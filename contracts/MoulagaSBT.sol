@@ -111,13 +111,25 @@ contract MoulagaSBT is ERC721 {
   function getMintedSBTs(address _feeder) external view returns (SBT[] memory) {
     require(protocol.isFeeder(_feeder), "Not a feeder.");
     
-    SBT[] memory validTokens;
-    uint256 targetId = 0;
+    uint256 count = 0;
     for (uint256 index = 0; index < feederSBTs[_feeder].length; index++) {
       SBT memory token = feederSBTs[_feeder][index];
       if (!token.isRevoked) {
-        validTokens[targetId] = token;
-        targetId++;
+        count++;
+      }
+    }
+
+    SBT[] memory validTokens = new SBT[](count);
+    if (count == 0) {
+      return validTokens;
+    }
+
+    uint256 actualIndex = 0;
+    for (uint256 index = 0; index < feederSBTs[_feeder].length; index++) {
+      SBT memory token = feederSBTs[_feeder][index];
+      if (!token.isRevoked) {
+        validTokens[actualIndex] = token;
+        actualIndex++;
       }
     }
     return validTokens;

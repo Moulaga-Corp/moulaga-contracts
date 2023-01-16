@@ -50,7 +50,9 @@ describe("Moulaga SBT", () => {
 			await feederToSBT.safeMint(consumer.address, holder.address, schemeNames);
 	
 			const moulagaSBT = await feederToSBT.getMoulagaSBT(feeder.address, holder.address, consumer.address);
+			const sbts = await sbtContract.getMintedSBTs(feeder.address);
 			expect(moulagaSBT.feeder).to.equal(feeder.address);
+			expect(sbts).to.have.lengthOf(1);
 		});
 	
 		it("should fail when minting a token for the same feeder, consumer and holder", async () => {
