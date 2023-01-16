@@ -14,3 +14,8 @@ async function main() {
 
   console.log(`SBT: ${sbtContract.address}`);
 }
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
